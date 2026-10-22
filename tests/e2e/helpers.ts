@@ -35,3 +35,26 @@ export async function createLessonWithApprovedQuiz(
   await expect(page.getByText("Bộ câu hỏi đã được duyệt")).toBeVisible();
   return lessonUrl;
 }
+
+// Enters answers for H01..H03 on the first check and confirms the diagnosis.
+export async function answerAndConfirmDiagnosis(page: Page, lessonUrl: string) {
+  await page.goto(`${lessonUrl}/answers`);
+  const answers: Record<string, string[]> = {
+    H01: ["B", "B", "B"],
+    H02: ["A", "A", "B"],
+    H03: ["A", "A", "A"],
+  };
+  for (const [code, options] of Object.entries(answers)) {
+    for (const [index, option] of options.entries()) {
+      await page
+        .getByRole("group", { name: `Câu ${index + 1} của ${code}` })
+        .getByRole("button", { name: option, exact: true })
+        .click();
+    }
+  }
+  await expect(page.getByText("3/3", { exact: true })).toBeVisible();
+  await expect(page.getByText("Đã lưu")).toBeVisible();
+  await page.goto(`${lessonUrl}/diagnosis`);
+  await page.getByRole("button", { name: "Xác nhận và soạn bài chữa lỗi" }).click();
+  await expect(page).toHaveURL(/\/remedial$/);
+}

@@ -4,12 +4,11 @@ import { createLessonWithApprovedQuiz } from "./helpers";
 test("teacher reviews misconceptions and regroups a pupil", async ({ page }) => {
   const lessonUrl = await createLessonWithApprovedQuiz(page, { pupils: 3 });
   await page.goto(`${lessonUrl}/answers`);
-  const answers: Record<string, string[]> = {
+  for (const [code, options] of Object.entries({
     H01: ["B", "B", "B"],
     H02: ["A", "A", "B"],
     H03: ["A", "A", "A"],
-  };
-  for (const [code, options] of Object.entries(answers)) {
+  })) {
     for (const [index, option] of options.entries()) {
       await page
         .getByRole("group", { name: `Câu ${index + 1} của ${code}` })
