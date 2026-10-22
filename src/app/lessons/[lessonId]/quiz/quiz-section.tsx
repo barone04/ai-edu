@@ -12,7 +12,10 @@ type Props = {
 
 // Loads one assessment's questions and hands them to the client editor.
 export async function QuizSection({ lessonId, phase, title, next }: Props) {
-  const lesson = await getLessonWithAssessment(lessonId, phase);
+  const [lesson, pre] = await Promise.all([
+    getLessonWithAssessment(lessonId, phase),
+    phase === "POST" ? getLessonWithAssessment(lessonId, "PRE") : null,
+  ]);
   if (!lesson) notFound();
 
   const assessment = lesson.assessments[0];
@@ -34,6 +37,7 @@ export async function QuizSection({ lessonId, phase, title, next }: Props) {
         fromAi={questions.some((q) => q.aiModel)}
         printHref={`/lessons/${lesson.id}/quiz/print?phase=${phase}`}
         next={next}
+        defaultQuestionCount={pre?.assessments[0]?.questions.length || undefined}
       />
     </>
   );

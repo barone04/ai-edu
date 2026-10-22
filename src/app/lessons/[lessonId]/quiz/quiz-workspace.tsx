@@ -26,6 +26,8 @@ type Props = {
   fromAi: boolean;
   printHref: string;
   next: { href: string; label: string };
+  // the follow-up quiz defaults to the same length as the first one
+  defaultQuestionCount?: number;
 };
 
 export function QuizWorkspace(props: Props) {
@@ -77,7 +79,12 @@ export function QuizWorkspace(props: Props) {
             </div>
           </div>
           {errorBox}
-          <QuizOptionsPanel pending={pending} submitLabel="Tạo câu hỏi bằng AI" onGenerate={generate} />
+          <QuizOptionsPanel
+            defaultQuestionCount={props.defaultQuestionCount}
+            pending={pending}
+            submitLabel="Tạo câu hỏi bằng AI"
+            onGenerate={generate}
+          />
         </Card>
         <button
           type="button"
@@ -173,7 +180,12 @@ export function QuizWorkspace(props: Props) {
       {!props.hasAnswers &&
         (regenerating ? (
           <Card>
-            <QuizOptionsPanel pending={pending} submitLabel="Tạo lại bằng AI" onGenerate={generate} />
+            <QuizOptionsPanel
+              defaultQuestionCount={props.defaultQuestionCount}
+              pending={pending}
+              submitLabel="Tạo lại bằng AI"
+              onGenerate={generate}
+            />
           </Card>
         ) : (
           <button

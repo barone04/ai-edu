@@ -12,13 +12,17 @@ import {
 } from "@/server/quiz-options";
 
 type Props = {
+  defaultQuestionCount?: number;
   pending: boolean;
   submitLabel: string;
   onGenerate: (options: QuizOptions) => void;
 };
 
-export function QuizOptionsPanel({ pending, submitLabel, onGenerate }: Props) {
-  const [options, setOptions] = useState<QuizOptions>(DEFAULT_QUIZ_OPTIONS);
+export function QuizOptionsPanel({ defaultQuestionCount, pending, submitLabel, onGenerate }: Props) {
+  const [options, setOptions] = useState<QuizOptions>({
+    ...DEFAULT_QUIZ_OPTIONS,
+    questionCount: defaultQuestionCount ?? DEFAULT_QUIZ_OPTIONS.questionCount,
+  });
   const [showSource, setShowSource] = useState(false);
   const update = (patch: Partial<QuizOptions>) => setOptions((current) => ({ ...current, ...patch }));
 
