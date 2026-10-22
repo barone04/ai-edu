@@ -16,7 +16,7 @@ export type ProgressInput = {
   postHasAnswers: boolean;
 };
 
-const STEP_LABELS: Record<StepKey, string> = {
+export const STEP_LABELS: Record<StepKey, string> = {
   quiz: "Tạo bài",
   answers: "Nhập kết quả",
   diagnosis: "Xem lỗi sai",
