@@ -24,3 +24,10 @@ test-results/
 .DS_Store
 .vscode/
 .idea/
+
+/src/generated/prisma
+
+# next.js and typescript generated files
+next-env.d.ts
+*.tsbuildinfo
+.vercel/
