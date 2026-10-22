@@ -1,4 +1,5 @@
 import { prisma } from "@/server/db";
+import type { ProgressInput } from "@/server/lesson-progress";
 import { studentCodes } from "@/server/student-codes";
 
 export const MAX_CLASS_SIZE = 50;
@@ -11,6 +12,46 @@ export async function listClassrooms() {
   });
 }
 
+// Everything lessonSteps() needs, shared by the lesson list and the lesson page.
+const progressInclude = {
+  assessments: {
+    select: {
+      phase: true,
+      questionsApprovedAt: true,
+      diagnosis: { select: { teacherConfirmedAt: true } },
+      questions: {
+        select: { _count: { select: { responses: true, aggregateAnswers: true } } },
+      },
+    },
+  },
+  _count: { select: { materials: true } },
+} as const;
+
+type ProgressSource = {
+  assessments: {
+    phase: "PRE" | "POST";
+    questionsApprovedAt: Date | null;
+    diagnosis: { teacherConfirmedAt: Date | null } | null;
+    questions: { _count: { responses: number; aggregateAnswers: number } }[];
+  }[];
+  _count: { materials: number };
+};
+
+export function progressInput(lesson: ProgressSource): ProgressInput {
+  const pre = lesson.assessments.find((a) => a.phase === "PRE");
+  const post = lesson.assessments.find((a) => a.phase === "POST");
+  const hasAnswers = (assessment: typeof pre) =>
+    assessment?.questions.some((q) => q._count.responses + q._count.aggregateAnswers > 0) ?? false;
+
+  return {
+    preApproved: Boolean(pre?.questionsApprovedAt),
+    preHasAnswers: hasAnswers(pre),
+    diagnosisConfirmed: Boolean(pre?.diagnosis?.teacherConfirmedAt),
+    hasMaterials: lesson._count.materials > 0,
+    postHasAnswers: hasAnswers(post),
+  };
+}
+
 export async function listLessons() {
   return prisma.lesson.findMany({
     where: { classroom: { isDemo: false } },
@@ -20,28 +61,24 @@ export async function listLessons() {
       title: true,
       createdAt: true,
       classroom: { select: { name: true } },
+      ...progressInclude,
     },
   });
+}
+
+export async function countOverview() {
+  const [classrooms, lessons, pupils] = await Promise.all([
+    prisma.classroom.count({ where: { isDemo: false } }),
+    prisma.lesson.count({ where: { classroom: { isDemo: false } } }),
+    prisma.classroom.aggregate({ where: { isDemo: false }, _sum: { studentCount: true } }),
+  ]);
+  return { classrooms, lessons, pupils: pupils._sum.studentCount ?? 0 };
 }
 
 export async function getLesson(id: string) {
   return prisma.lesson.findUnique({
     where: { id },
-    include: {
-      classroom: true,
-      assessments: {
-        include: {
-          diagnosis: { select: { teacherConfirmedAt: true } },
-          questions: {
-            select: {
-              id: true,
-              _count: { select: { responses: true, aggregateAnswers: true } },
-            },
-          },
-        },
-      },
-      _count: { select: { materials: true } },
-    },
+    include: { classroom: true, ...progressInclude },
   });
 }
 

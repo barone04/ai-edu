@@ -8,7 +8,7 @@ async function PreQuiz({ params }: { params: Promise<{ lessonId: string }> }) {
     <QuizSection
       lessonId={lessonId}
       phase="PRE"
-      title="Bước 1 · Tạo bài kiểm tra nhanh"
+      title="Tạo bài kiểm tra nhanh"
       next={{ href: `/lessons/${lessonId}/answers`, label: "Tiếp tục: Nhập kết quả" }}
     />
   );

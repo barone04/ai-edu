@@ -29,6 +29,31 @@ export function Card({ children, className = "" }: { children: ReactNode; classN
   );
 }
 
+export function Chip({
+  selected,
+  onClick,
+  children,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`min-h-11 rounded-full border px-4 text-sm font-semibold transition-colors ${
+        selected
+          ? "border-primary bg-primary text-white"
+          : "border-line bg-surface text-ink hover:border-primary"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function DemoBadge() {
   return (
     <span className="inline-flex items-center self-start rounded-full bg-warn-soft px-3 py-1 text-sm font-semibold text-warn">

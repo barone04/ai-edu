@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DemoBadge } from "@/components/ui";
+import { StepHeader } from "@/components/step-header";
 import { getLessonWithAssessment, toDraft } from "@/server/repositories/assessments";
 import { QuizWorkspace } from "./quiz-workspace";
 
@@ -24,13 +23,7 @@ export async function QuizSection({ lessonId, phase, title, next }: Props) {
 
   return (
     <>
-      <div className="flex flex-col gap-2">
-        {lesson.classroom.isDemo && <DemoBadge />}
-        <Link href={`/lessons/${lesson.id}`} className="text-muted hover:text-primary">
-          ← {lesson.title} · Lớp {lesson.classroom.name}
-        </Link>
-        <h1 className="text-2xl font-bold">{title}</h1>
-      </div>
+      <StepHeader lesson={lesson} step={phase === "PRE" ? "quiz" : "follow-up"} title={title} />
       <QuizWorkspace
         key={editorKey}
         lessonId={lesson.id}
