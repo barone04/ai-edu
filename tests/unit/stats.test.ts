@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyGroupOverrides,
   compareAssessments,
   computeAssessmentStats,
   computeQuestionStats,
   findOverfilledQuestions,
   groupForScore,
+  rankMisconceptions,
   type IndividualResponse,
   type QuestionKey,
 } from "@/server/stats";
@@ -149,5 +151,40 @@ describe("compareAssessments", () => {
     const aggregate = computeAssessmentStats(questions, { mode: "AGGREGATE", counts: [] });
 
     expect(compareAssessments(aggregate, aggregate).studentsNeedingFollowUp).toBeNull();
+  });
+});
+
+describe("rankMisconceptions", () => {
+  it("merges the same misconception across questions and ranks by count", () => {
+    const stats = computeAssessmentStats(questions, {
+      mode: "AGGREGATE",
+      counts: [
+        { questionId: "q1", option: "A", count: 12 },
+        { questionId: "q1", option: "C", count: 3 },
+        { questionId: "q1", option: "B", count: 15 },
+        { questionId: "q2", option: "A", count: 8 },
+        { questionId: "q2", option: "C", count: 22 },
+        { questionId: "q3", option: "D", count: 5 },
+      ],
+    });
+
+    expect(rankMisconceptions(stats)).toEqual([
+      { misconception: ADDS_DIRECTLY, count: 20, share: 20 / 65, questionNumbers: [1, 2] },
+      { misconception: "quên đổi tử số", count: 3, share: 3 / 65, questionNumbers: [1] },
+    ]);
+  });
+});
+
+describe("applyGroupOverrides", () => {
+  it("lets the teacher move a pupil to another group", () => {
+    const students = [
+      { studentId: "H01", answered: 3, correct: 1, group: "SUPPORT" as const },
+      { studentId: "H02", answered: 3, correct: 3, group: "EXTEND" as const },
+    ];
+
+    expect(applyGroupOverrides(students, { H01: "CONSOLIDATE" }).map((s) => s.group)).toEqual([
+      "CONSOLIDATE",
+      "EXTEND",
+    ]);
   });
 });
