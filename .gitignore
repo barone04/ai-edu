@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+
+# build output
+.next/
+out/
+dist/
+
+# environment and secrets
+.env
+.env.*
+!.env.example
+
+# local database
+*.db
+*.db-journal
+
+# test output
+coverage/
+playwright-report/
+test-results/
+
+# os and editor
+.DS_Store
+.vscode/
+.idea/
