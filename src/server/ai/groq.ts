@@ -3,6 +3,7 @@ import { z } from "zod";
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const REQUEST_TIMEOUT_MS = 45_000;
 const MAX_PROMPT_CHARS = 12_000;
+const MAX_ATTEMPTS = 2;
 
 export type AiErrorCode =
   | "NOT_CONFIGURED"
@@ -59,35 +60,40 @@ export async function generateJson<T>({ task, system, user, schema }: JsonReques
   const jsonSchema = z.toJSONSchema(schema) as Record<string, unknown>;
   delete jsonSchema.$schema;
 
-  let response: Response;
-  try {
-    response = await fetch(GROQ_URL, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      body: JSON.stringify({
-        model: aiModel(),
-        temperature: 0.4,
-        // gpt-oss reasons before answering; low effort keeps the JSON within the token budget
-        reasoning_effort: "low",
-        max_completion_tokens: 8192,
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-        response_format: {
-          type: "json_schema",
-          json_schema: { name: task, strict: true, schema: jsonSchema },
-        },
-      }),
-    });
-  } catch (error) {
-    const timedOut = error instanceof DOMException && error.name === "TimeoutError";
-    console.error(JSON.stringify({ event: "ai_request_failed", task, timedOut }));
-    throw new AiError(timedOut ? "TIMEOUT" : "UPSTREAM", `${task}: request failed`);
-  }
+  const requestBody = JSON.stringify({
+    model: aiModel(),
+    temperature: 0.4,
+    // gpt-oss reasons before answering; low effort keeps the JSON within the token budget
+    reasoning_effort: "low",
+    max_completion_tokens: 8192,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+    response_format: {
+      type: "json_schema",
+      json_schema: { name: task, strict: true, schema: jsonSchema },
+    },
+  });
 
-  if (!response.ok) {
+  let response: Response | undefined;
+  // strict mode rejects output that skips required fields (json_validate_failed); one more attempt
+  // usually succeeds, and the bound keeps a misbehaving model from looping
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      response = await fetch(GROQ_URL, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        body: requestBody,
+      });
+    } catch (error) {
+      const timedOut = error instanceof DOMException && error.name === "TimeoutError";
+      console.error(JSON.stringify({ event: "ai_request_failed", task, timedOut }));
+      throw new AiError(timedOut ? "TIMEOUT" : "UPSTREAM", `${task}: request failed`);
+    }
+    if (response.ok) break;
+
     // Groq error bodies describe the request problem (e.g. json_validate_failed), never secrets
     const detail = await response
       .json()
@@ -97,15 +103,18 @@ export async function generateJson<T>({ task, system, user, schema }: JsonReques
       JSON.stringify({
         event: "ai_http_error",
         task,
+        attempt,
         status: response.status,
         code: detail?.code,
         message: detail?.message?.slice(0, 300),
       }),
     );
+    if (detail?.code === "json_validate_failed" && attempt < MAX_ATTEMPTS) continue;
     // the free tier allows roughly two quiz generations per minute
     const code = response.status === 429 ? "RATE_LIMITED" : "UPSTREAM";
     throw new AiError(code, `${task}: HTTP ${response.status}`);
   }
+  if (!response) throw new AiError("UPSTREAM", `${task}: no response`);
 
   const body = (await response.json()) as { choices?: { message?: { content?: string } }[] };
   const content = body.choices?.[0]?.message?.content;
