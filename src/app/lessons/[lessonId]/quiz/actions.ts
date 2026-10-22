@@ -5,13 +5,13 @@ import { z } from "zod";
 import { aiErrorMessage, aiModel } from "@/server/ai/groq";
 import { DIAGNOSTIC_QUIZ_PROMPT_VERSION, generateDiagnosticQuiz } from "@/server/ai/diagnostic-quiz";
 import { findQuestionIssues, questionDraftSchema } from "@/server/questions";
+import { quizOptionsSchema } from "@/server/quiz-options";
 import {
   getLessonWithAssessment,
   replaceWithDraft,
   saveQuestions,
 } from "@/server/repositories/assessments";
 
-const QUESTION_COUNT = 3;
 const phaseSchema = z.enum(["PRE", "POST"]);
 
 export type QuizActionResult = { error?: string };
@@ -19,8 +19,11 @@ export type QuizActionResult = { error?: string };
 export async function generateQuizAction(
   lessonId: string,
   phaseInput: string,
+  optionsInput: unknown,
 ): Promise<QuizActionResult> {
   const phase = phaseSchema.parse(phaseInput);
+  const options = quizOptionsSchema.safeParse(optionsInput);
+  if (!options.success) return { error: options.error.issues[0].message };
   const lesson = await getLessonWithAssessment(lessonId, phase);
   if (!lesson) return { error: "Không tìm thấy tiết học." };
 
@@ -37,7 +40,7 @@ export async function generateQuizAction(
       title: lesson.title,
       learningObjective: lesson.learningObjective,
       referenceText: lesson.referenceText,
-      questionCount: QUESTION_COUNT,
+      options: options.data,
       previousQuestions,
     });
     const outcome = await replaceWithDraft(lessonId, phase, drafts, {
