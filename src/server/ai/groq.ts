@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { plainMathDeep } from "./plain-math";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const REQUEST_TIMEOUT_MS = 45_000;
@@ -119,7 +120,7 @@ export async function generateJson<T>({ task, system, user, schema }: JsonReques
   const body = (await response.json()) as { choices?: { message?: { content?: string } }[] };
   const content = body.choices?.[0]?.message?.content;
   try {
-    return schema.parse(JSON.parse(content ?? ""));
+    return schema.parse(plainMathDeep(JSON.parse(content ?? "")));
   } catch {
     console.error(JSON.stringify({ event: "ai_invalid_output", task }));
     throw new AiError("INVALID_OUTPUT", `${task}: output failed validation`);

@@ -1,7 +1,7 @@
 import { remedialSchema, type RemedialContent } from "@/server/remedial";
 import { generateJson } from "./groq";
 
-export const REMEDIAL_PROMPT_VERSION = "remedial-lesson@1";
+export const REMEDIAL_PROMPT_VERSION = "remedial-lesson@2";
 
 export type RemedialRequest = {
   grade: number;
@@ -21,6 +21,7 @@ const SYSTEM_PROMPT = `Bạn là giáo viên tiểu học Việt Nam giàu kinh 
 
 Yêu cầu bắt buộc:
 - Viết bằng tiếng Việt, câu ngắn, từ ngữ phù hợp lứa tuổi.
+- Viết phân số dạng 1/2, phép nhân dùng ×; không dùng LaTeX hay ký hiệu \\frac.
 - "pupilExplanation": giải thích ngắn (3–5 câu) cho học sinh, dùng ví dụ dễ hình dung như chia bánh, chia ruộng, que tính, đồ vật quen thuộc ở quê.
 - "teachingSteps": trình tự dạy trong đúng 5 phút, 3–4 bước, mỗi bước ghi thời gian (ví dụ "Phút 1–2") và việc giáo viên làm.
 - "guidingQuestions": đúng 2 câu hỏi gợi mở để học sinh tự nhận ra vì sao cách làm sai là sai.

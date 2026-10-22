@@ -4,7 +4,7 @@ import { DIFFICULTY_MIXES, QUESTION_STYLES, type QuizOptions } from "@/server/qu
 import { OPTION_KEYS } from "@/server/stats";
 import { generateJson } from "./groq";
 
-export const DIAGNOSTIC_QUIZ_PROMPT_VERSION = "diagnostic-quiz@3";
+export const DIAGNOSTIC_QUIZ_PROMPT_VERSION = "diagnostic-quiz@4";
 
 // No length constraints here: Groq strict mode supports only a subset of JSON schema.
 const aiQuestionSchema = z.object({
@@ -41,6 +41,7 @@ const SYSTEM_PROMPT = `Bạn là giáo viên tiểu học Việt Nam giàu kinh 
 
 Yêu cầu bắt buộc:
 - Viết bằng tiếng Việt, câu ngắn, từ ngữ phù hợp lứa tuổi học sinh.
+- Viết phân số dạng 1/2, phép nhân dùng ×; không dùng LaTeX hay ký hiệu \\frac.
 - Mỗi câu có đúng 4 phương án A, B, C, D và đúng 1 phương án đúng. Tự kiểm tra lại phép tính của phương án đúng.
 - Mỗi phương án sai phải là kết quả học sinh thật sự nhận được khi mắc một lỗi hiểu sai cụ thể và phổ biến. Hãy áp dụng lỗi đó vào đề bài để tính ra phương án sai, không bịa số ngẫu nhiên.
 - Ưu tiên các lỗi hiểu sai phổ biến nhất của chủ đề. Ví dụ với cộng phân số khác mẫu: cộng tử với tử, mẫu với mẫu; quy đồng mẫu số nhưng quên đổi tử số.
