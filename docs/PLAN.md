@@ -34,7 +34,7 @@ src/
   server/
     db.ts              Prisma client (pg driver adapter)
     stats/             pure statistics, unit tested
-    ai/                Anthropic client, versioned prompts, Zod schemas
+    ai/                Groq client (fetch), versioned prompts, Zod schemas
     repositories/      data access per aggregate
     auth.ts            passcode session
 prisma/                schema, migrations, seed
@@ -43,7 +43,7 @@ tests/unit, tests/e2e
 
 Constraints:
 
-- Anthropic key and model stay server-side (`ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`).
+- The Groq key and model stay server-side (`GROQ_API_KEY`, `GROQ_MODEL`). Groq is called through its OpenAI-compatible HTTP endpoint with plain `fetch`, so no SDK dependency is needed.
 - AI calls: structured JSON output, Zod validation, bounded input, timeout, no retry loops. On failure the teacher sees a clear error and can retry or write questions by hand. A failed call never produces fake output.
 - Each AI-generated record stores `aiModel` and `promptVersion`.
 - Only aggregated statistics are sent to the model, never pupil-level rows.

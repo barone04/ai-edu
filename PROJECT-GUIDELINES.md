@@ -7,7 +7,7 @@ Project-specific rules on top of [ENGINEER_STANDARDS_EN.md](ENGINEER_STANDARDS_E
 - Modular monolith. Do not add queues, caches, microservices or external auth providers.
 - `src/server/stats` holds pure, deterministic functions. All numbers shown to teachers come from here. The LLM never computes or overrides scores.
 - `src/server/ai` holds one prompt per task. Each prompt has a `PROMPT_VERSION` constant, stored with every generated record together with the model id.
-- AI output is validated with Zod before it is saved. Invalid output is an error, never silently patched.
+- AI provider is Groq via its OpenAI-compatible endpoint. Requests use strict `json_schema` response format, and output is still validated with Zod before it is saved. Invalid output is an error, never silently patched.
 - `src/generated/` is produced by `prisma generate` and is not committed.
 
 ## Domain rules

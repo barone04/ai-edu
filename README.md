@@ -8,7 +8,7 @@ See [docs/PLAN.md](docs/PLAN.md) for requirements, architecture and milestones, 
 
 ## Stack
 
-Next.js 16 · TypeScript · Tailwind CSS 4 · Prisma 7 + PostgreSQL · Anthropic API · Zod · Vitest
+Next.js 16 · TypeScript · Tailwind CSS 4 · Prisma 7 + PostgreSQL · Groq API (OpenAI-compatible) · Zod · Vitest
 
 ## Requirements
 
@@ -18,7 +18,7 @@ Next.js 16 · TypeScript · Tailwind CSS 4 · Prisma 7 + PostgreSQL · Anthropic
 ## Local setup
 
 ```bash
-cp .env.example .env          # fill ANTHROPIC_API_KEY to enable AI features
+cp .env.example .env          # fill GROQ_API_KEY to enable AI features
 docker compose up -d db       # Postgres on localhost:5433
 npm install                   # also generates the Prisma client
 npm run db:migrate            # apply migrations
@@ -30,8 +30,8 @@ npm run dev                   # http://localhost:3000
 | Name | Description |
 | --- | --- |
 | `DATABASE_URL` | Postgres connection string |
-| `ANTHROPIC_API_KEY` | server-side only; empty runs demo fixtures only |
-| `ANTHROPIC_MODEL` | model id used for all AI tasks |
+| `GROQ_API_KEY` | server-side only; empty runs demo fixtures only |
+| `GROQ_MODEL` | Groq model id used for all AI tasks; must support strict JSON schema output |
 | `APP_PASSCODE` | shared passcode for teachers |
 | `SESSION_SECRET` | secret for signing the session cookie |
 
