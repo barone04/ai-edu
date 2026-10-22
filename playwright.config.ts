@@ -3,6 +3,8 @@ import { defineConfig, devices } from "@playwright/test";
 // E2E tests need the local Postgres from docker-compose.yml and a migrated database.
 export default defineConfig({
   testDir: "tests/e2e",
+  // tests share one dev server and database
+  workers: 1,
   use: {
     baseURL: "http://localhost:3000",
     ...devices["Pixel 5"],

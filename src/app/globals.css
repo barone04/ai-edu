@@ -22,6 +22,11 @@ body {
   font-size: 1.0625rem;
 }
 
+@page {
+  size: A4;
+  margin: 15mm;
+}
+
 @media print {
   body {
     background: #ffffff;

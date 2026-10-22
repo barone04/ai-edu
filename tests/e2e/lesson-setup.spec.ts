@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("teacher creates a lesson for a new class", async ({ page }) => {
   await page.goto("/lessons/new");
+  await expect(page.getByRole("button", { name: "Lưu tiết học" })).toBeVisible();
   const newClassToggle = page.getByRole("button", { name: "Lớp mới" });
   if (await newClassToggle.isVisible()) await newClassToggle.click();
 
