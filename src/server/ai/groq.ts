@@ -64,8 +64,9 @@ export async function generateJson<T>({ task, system, user, schema }: JsonReques
   const requestBody = JSON.stringify({
     model: aiModel(),
     temperature: 0.4,
-    // gpt-oss reasons before answering; low effort keeps the JSON within the token budget
-    reasoning_effort: "low",
+    // medium effort: low effort produced wrong arithmetic in answer keys; the token budget below
+    // leaves room for the model's reasoning plus the JSON
+    reasoning_effort: "medium",
     max_completion_tokens: 8192,
     messages: [
       { role: "system", content: system },
