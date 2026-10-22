@@ -4,7 +4,12 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const REQUEST_TIMEOUT_MS = 45_000;
 const MAX_PROMPT_CHARS = 12_000;
 
-export type AiErrorCode = "NOT_CONFIGURED" | "TIMEOUT" | "UPSTREAM" | "INVALID_OUTPUT";
+export type AiErrorCode =
+  | "NOT_CONFIGURED"
+  | "TIMEOUT"
+  | "RATE_LIMITED"
+  | "UPSTREAM"
+  | "INVALID_OUTPUT";
 
 export class AiError extends Error {
   constructor(
@@ -24,6 +29,8 @@ export function aiErrorMessage(error: unknown): string {
       return "Chưa cấu hình AI trên máy chủ. Bạn có thể tự soạn câu hỏi.";
     case "TIMEOUT":
       return "AI phản hồi quá lâu. Hãy kiểm tra mạng và thử lại.";
+    case "RATE_LIMITED":
+      return "AI đang quá tải. Đợi khoảng 30 giây rồi thử lại.";
     case "INVALID_OUTPUT":
       return "AI trả về kết quả chưa hợp lệ. Hãy thử lại hoặc tự soạn.";
     default:
@@ -61,6 +68,9 @@ export async function generateJson<T>({ task, system, user, schema }: JsonReques
       body: JSON.stringify({
         model: aiModel(),
         temperature: 0.4,
+        // gpt-oss reasons before answering; low effort keeps the JSON within the token budget
+        reasoning_effort: "low",
+        max_completion_tokens: 8192,
         messages: [
           { role: "system", content: system },
           { role: "user", content: user },
@@ -78,8 +88,23 @@ export async function generateJson<T>({ task, system, user, schema }: JsonReques
   }
 
   if (!response.ok) {
-    console.error(JSON.stringify({ event: "ai_http_error", task, status: response.status }));
-    throw new AiError("UPSTREAM", `${task}: HTTP ${response.status}`);
+    // Groq error bodies describe the request problem (e.g. json_validate_failed), never secrets
+    const detail = await response
+      .json()
+      .then((data: { error?: { code?: string; message?: string } }) => data.error)
+      .catch(() => undefined);
+    console.error(
+      JSON.stringify({
+        event: "ai_http_error",
+        task,
+        status: response.status,
+        code: detail?.code,
+        message: detail?.message?.slice(0, 300),
+      }),
+    );
+    // the free tier allows roughly two quiz generations per minute
+    const code = response.status === 429 ? "RATE_LIMITED" : "UPSTREAM";
+    throw new AiError(code, `${task}: HTTP ${response.status}`);
   }
 
   const body = (await response.json()) as { choices?: { message?: { content?: string } }[] };

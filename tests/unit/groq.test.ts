@@ -53,6 +53,12 @@ describe("generateJson", () => {
     await expect(generateJson(request)).rejects.toMatchObject({ code: "UPSTREAM" });
   });
 
+  it("maps rate limiting to its own error", async () => {
+    mockFetch(new Response("{}", { status: 429 }));
+
+    await expect(generateJson(request)).rejects.toMatchObject({ code: "RATE_LIMITED" });
+  });
+
   it("maps timeouts to a timeout error", async () => {
     mockFetch(new DOMException("timed out", "TimeoutError"));
 
