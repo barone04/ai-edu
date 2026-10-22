@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AssessmentPhase {
+  PRE
+  POST
+}
+
+enum EntryMode {
+  INDIVIDUAL
+  AGGREGATE
+}
+
+enum OptionKey {
+  A
+  B
+  C
+  D
+}
+
+model Classroom {
+  id           String    @id @default(cuid())
+  name         String
+  grade        Int
+  studentCount Int
+  // synthetic demo data must never be presented as a real pilot
+  isDemo       Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  students     Student[]
+  lessons      Lesson[]
+}
+
+model Student {
+  id          String     @id @default(cuid())
+  classroomId String
+  // anonymous code such as H01, never a real name
+  code        String
+  classroom   Classroom  @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  responses   Response[]
+
+  @@unique([classroomId, code])
+}
+
+model Lesson {
+  id                  String       @id @default(cuid())
+  classroomId         String
+  subject             String
+  title               String
+  learningObjective   String
+  referenceText       String?
+  teacherObservations String?
+  createdAt           DateTime     @default(now())
+  classroom           Classroom    @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  assessments         Assessment[]
+  materials           Material[]
+
+  @@index([classroomId])
+}
+
+model Assessment {
+  id                  String          @id @default(cuid())
+  lessonId            String
+  phase               AssessmentPhase
+  entryMode           EntryMode       @default(INDIVIDUAL)
+  questionsApprovedAt DateTime?
+  createdAt           DateTime        @default(now())
+  lesson              Lesson          @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  questions           Question[]
+  diagnosis           Diagnosis?
+
+  @@unique([lessonId, phase])
+}
+
+model Question {
+  id               String            @id @default(cuid())
+  assessmentId     String
+  order            Int
+  content          String
+  // { "A": "...", "B": "...", "C": "...", "D": "..." }
+  options          Json
+  correctOption    OptionKey
+  // misconception hypothesis per incorrect option, e.g. { "A": "adds numerators and denominators" }
+  misconceptions   Json
+  explanation      String
+  difficulty       String
+  aiModel          String?
+  promptVersion    String?
+  assessment       Assessment        @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  responses        Response[]
+  aggregateAnswers AggregateAnswer[]
+
+  @@unique([assessmentId, order])
+}
+
+model Response {
+  id             String    @id @default(cuid())
+  questionId     String
+  studentId      String
+  selectedOption OptionKey
+  question       Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  student        Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, studentId])
+}
+
+model AggregateAnswer {
+  id         String    @id @default(cuid())
+  questionId String
+  option     OptionKey
+  count      Int
+  question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, option])
+}
+
+// statistics are recomputed from responses on demand; this stores only teacher decisions and AI text
+model Diagnosis {
+  id                      String     @id @default(cuid())
+  assessmentId            String     @unique
+  confirmedMisconceptions Json
+  // studentId -> group, only for INDIVIDUAL mode
+  groupOverrides          Json?
+  aiSummary               Json?
+  aiModel                 String?
+  promptVersion           String?
+  teacherConfirmedAt      DateTime?
+  assessment              Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+}
+
+model Material {
+  id            String   @id @default(cuid())
+  lessonId      String
+  content       Json
+  teacherEdited Boolean  @default(false)
+  aiModel       String?
+  promptVersion String?
+  createdAt     DateTime @default(now())
+  lesson        Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+}
