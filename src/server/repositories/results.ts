@@ -1,6 +1,7 @@
 import type { AssessmentPhase } from "@/generated/prisma/client";
 import { prisma } from "@/server/db";
 import {
+  applyGroupOverrides,
   computeAssessmentStats,
   type AssessmentInput,
   type OptionKey,
@@ -90,4 +91,18 @@ export async function saveDiagnosis(
     create: { assessmentId, ...data },
     update: data,
   });
+}
+
+type LoadedResults = NonNullable<Awaited<ReturnType<typeof loadAssessmentResults>>>;
+
+// Pupil codes per group after teacher overrides; null when answers were entered as class totals.
+export function pupilGroups(results: LoadedResults): Record<StudentGroup, string[]> | null {
+  if (!results.stats.students) return null;
+  const overrides = (results.diagnosis?.groupOverrides ?? {}) as Record<string, StudentGroup>;
+  const groups: Record<StudentGroup, string[]> = { SUPPORT: [], CONSOLIDATE: [], EXTEND: [] };
+  for (const pupil of applyGroupOverrides(results.stats.students, overrides)) {
+    groups[pupil.group].push(results.studentCodes.get(pupil.studentId) ?? "?");
+  }
+  for (const codes of Object.values(groups)) codes.sort();
+  return groups;
 }
