@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* chart-correct / chart-wrong are validated for colour-vision deficiency on the white surface */
 @theme {
   --color-canvas: #faf7f2;
   --color-surface: #ffffff;
@@ -9,6 +10,10 @@
   --color-primary: #0f6e5c;
   --color-primary-strong: #0a5446;
   --color-primary-soft: #e3f2ee;
+  --color-accent: #c2541b;
+  --color-accent-soft: #fdeee4;
+  --color-chart-correct: #0b8a6a;
+  --color-chart-wrong: #c2541b;
   --color-warn: #9a5b00;
   --color-warn-soft: #fff4dc;
   --color-danger: #b42318;

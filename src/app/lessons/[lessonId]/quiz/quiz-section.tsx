@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DemoBadge } from "@/components/ui";
+import { StepHeader } from "@/components/step-header";
 import { getLessonWithAssessment, toDraft } from "@/server/repositories/assessments";
 import { QuizWorkspace } from "./quiz-workspace";
 
@@ -13,7 +12,10 @@ type Props = {
 
 // Loads one assessment's questions and hands them to the client editor.
 export async function QuizSection({ lessonId, phase, title, next }: Props) {
-  const lesson = await getLessonWithAssessment(lessonId, phase);
+  const [lesson, pre] = await Promise.all([
+    getLessonWithAssessment(lessonId, phase),
+    phase === "POST" ? getLessonWithAssessment(lessonId, "PRE") : null,
+  ]);
   if (!lesson) notFound();
 
   const assessment = lesson.assessments[0];
@@ -24,13 +26,7 @@ export async function QuizSection({ lessonId, phase, title, next }: Props) {
 
   return (
     <>
-      <div className="flex flex-col gap-2">
-        {lesson.classroom.isDemo && <DemoBadge />}
-        <Link href={`/lessons/${lesson.id}`} className="text-muted hover:text-primary">
-          ← {lesson.title} · Lớp {lesson.classroom.name}
-        </Link>
-        <h1 className="text-2xl font-bold">{title}</h1>
-      </div>
+      <StepHeader lesson={lesson} step={phase === "PRE" ? "quiz" : "follow-up"} title={title} />
       <QuizWorkspace
         key={editorKey}
         lessonId={lesson.id}
@@ -41,6 +37,7 @@ export async function QuizSection({ lessonId, phase, title, next }: Props) {
         fromAi={questions.some((q) => q.aiModel)}
         printHref={`/lessons/${lesson.id}/quiz/print?phase=${phase}`}
         next={next}
+        defaultQuestionCount={pre?.assessments[0]?.questions.length || undefined}
       />
     </>
   );

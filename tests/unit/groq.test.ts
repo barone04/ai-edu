@@ -5,13 +5,21 @@ import { AiError, aiErrorMessage, generateJson } from "@/server/ai/groq";
 const schema = z.object({ answer: z.string() });
 const request = { task: "test", system: "system", user: "user", schema };
 
-function mockFetch(response: Response | Error) {
+function mockFetch(...responses: (Response | Error)[]) {
+  let call = 0;
   const fetchMock = vi.fn(async () => {
+    const response = responses[Math.min(call++, responses.length - 1)];
     if (response instanceof Error) throw response;
-    return response;
+    return response.clone();
   });
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
+}
+
+function schemaRejected() {
+  return new Response(JSON.stringify({ error: { code: "json_validate_failed", message: "missing" } }), {
+    status: 400,
+  });
 }
 
 function completion(content: string) {
@@ -51,6 +59,26 @@ describe("generateJson", () => {
     mockFetch(new Response("busy", { status: 503 }));
 
     await expect(generateJson(request)).rejects.toMatchObject({ code: "UPSTREAM" });
+  });
+
+  it("retries once when strict mode rejects the generated json", async () => {
+    const fetchMock = mockFetch(schemaRejected(), completion('{"answer":"3/4"}'));
+
+    await expect(generateJson(request)).resolves.toEqual({ answer: "3/4" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives up after the second schema rejection", async () => {
+    const fetchMock = mockFetch(schemaRejected(), schemaRejected(), completion('{"answer":"3/4"}'));
+
+    await expect(generateJson(request)).rejects.toMatchObject({ code: "UPSTREAM" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("maps rate limiting to its own error", async () => {
+    mockFetch(new Response("{}", { status: 429 }));
+
+    await expect(generateJson(request)).rejects.toMatchObject({ code: "RATE_LIMITED" });
   });
 
   it("maps timeouts to a timeout error", async () => {

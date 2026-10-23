@@ -30,6 +30,17 @@ describe("findQuestionIssues", () => {
     expect(issues).toEqual(["Phương án C chưa có lỗi hiểu sai tương ứng."]);
   });
 
+  it("flags options that are equal in value", () => {
+    const issues = findQuestionIssues({ ...valid, options: { ...valid.options, D: "6/8" } });
+
+    expect(issues).toEqual(["Có hai phương án bằng nhau về giá trị (ví dụ 1/2 và 2/4)."]);
+  });
+
+  it("does not compare options that are not plain numbers", () => {
+    const options = { A: "3 quả cam", B: "6/2 quả", C: "3", D: "4" };
+    expect(findQuestionIssues({ ...valid, options })).toEqual([]);
+  });
+
   it("flags missing content and options", () => {
     const issues = findQuestionIssues({ ...valid, content: "", options: { ...valid.options, A: "" } });
 
