@@ -1,4 +1,4 @@
-# Bắt Mạch Lớp Học AI
+# Lớp Mình Hiểu Bài
 
 Helps primary-school teachers find **why** pupils answer wrongly, reteach the right concept and measure the result, with pupils working only on paper.
 

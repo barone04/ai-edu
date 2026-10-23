@@ -1,4 +1,4 @@
-# Plan — Bắt Mạch Lớp Học AI
+# Plan — Lớp Mình Hiểu Bài
 
 Product background and competition context: [CONTEXT.md](../CONTEXT.md).
 

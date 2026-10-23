@@ -1,4 +1,4 @@
-import { HeartPulse } from "lucide-react";
+import { BookOpenCheck } from "lucide-react";
 import type { Metadata } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 import Link from "next/link";
@@ -11,8 +11,8 @@ const beVietnamPro = Be_Vietnam_Pro({
 });
 
 export const metadata: Metadata = {
-  title: "Bắt Mạch Lớp Học AI",
-  description: "Phát hiện lỗi sai, dạy bổ sung đúng chỗ.",
+  title: "Lớp Mình Hiểu Bài",
+  description: "Không để em nào bị bỏ lại: biết em sai ở đâu, dạy lại đúng chỗ.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -23,11 +23,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <div className="mx-auto flex w-full max-w-3xl items-center gap-3 px-4 py-3">
             <Link href="/" className="flex items-center gap-2.5">
               <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-white">
-                <HeartPulse className="size-6" aria-hidden />
+                <BookOpenCheck className="size-6" aria-hidden />
               </span>
               <span className="flex flex-col leading-tight">
-                <span className="text-lg font-bold text-primary">Bắt Mạch Lớp Học</span>
-                <span className="text-xs text-muted">Phát hiện lỗi sai · Dạy đúng chỗ</span>
+                <span className="text-lg font-bold text-primary">Lớp Mình Hiểu Bài</span>
+                <span className="text-xs text-muted">Không để em nào bị bỏ lại</span>
               </span>
             </Link>
           </div>

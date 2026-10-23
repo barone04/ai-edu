@@ -189,6 +189,48 @@ export function findOverfilledQuestions(counts: AggregateCount[], classSize: num
   return [...totals.entries()].filter(([, total]) => total > classSize).map(([id]) => id);
 }
 
+export type RankedMisconception = {
+  misconception: string;
+  // answers that point to this misconception, across all questions
+  count: number;
+  // share of all answers in the assessment
+  share: number;
+  // 1-based question numbers where it appeared
+  questionNumbers: number[];
+};
+
+// Groups identical misconception texts across questions, most frequent first.
+export function rankMisconceptions(stats: AssessmentStats): RankedMisconception[] {
+  const ranked = new Map<string, { count: number; questionNumbers: number[] }>();
+  stats.questions.forEach((question, index) => {
+    for (const error of question.errors) {
+      if (error.misconception === null) continue;
+      const entry = ranked.get(error.misconception) ?? { count: 0, questionNumbers: [] };
+      entry.count += error.count;
+      entry.questionNumbers.push(index + 1);
+      ranked.set(error.misconception, entry);
+    }
+  });
+  return [...ranked.entries()]
+    .map(([misconception, entry]) => ({
+      misconception,
+      ...entry,
+      share: rate(entry.count, stats.totalAnswers),
+    }))
+    .sort((a, b) => b.count - a.count);
+}
+
+// Teacher overrides win over the computed provisional group.
+export function applyGroupOverrides(
+  students: StudentResult[],
+  overrides: Record<string, StudentGroup>,
+): StudentResult[] {
+  return students.map((student) => ({
+    ...student,
+    group: overrides[student.studentId] ?? student.group,
+  }));
+}
+
 export type AssessmentComparison = {
   preCorrectRate: number;
   postCorrectRate: number;
@@ -204,21 +246,14 @@ export function compareAssessments(
   pre: AssessmentStats,
   post: AssessmentStats,
 ): AssessmentComparison {
-  const remaining = new Map<string, number>();
-  for (const question of post.questions) {
-    for (const error of question.errors) {
-      if (error.misconception === null) continue;
-      remaining.set(error.misconception, (remaining.get(error.misconception) ?? 0) + error.count);
-    }
-  }
-
   return {
     preCorrectRate: pre.overallCorrectRate,
     postCorrectRate: post.overallCorrectRate,
     differencePoints: (post.overallCorrectRate - pre.overallCorrectRate) * 100,
-    remainingMisconceptions: [...remaining.entries()]
-      .map(([misconception, count]) => ({ misconception, count }))
-      .sort((a, b) => b.count - a.count),
+    remainingMisconceptions: rankMisconceptions(post).map(({ misconception, count }) => ({
+      misconception,
+      count,
+    })),
     studentsNeedingFollowUp:
       post.students === null ? null : post.students.filter((s) => s.group !== "EXTEND").length,
   };
